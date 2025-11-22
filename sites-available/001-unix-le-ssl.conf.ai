@@ -1,0 +1,95 @@
+<VirtualHost *:443>
+    ServerName www.unix.com
+    ServerAlias unix.com
+    DocumentRoot /var/www/
+    LogLevel crit ssl:crit reqtimeout:crit
+
+    ErrorLog ${APACHE_LOG_DIR}/man_page_ssl_errors.log
+    CustomLog ${APACHE_LOG_DIR}/man_page_ssl_access.log combined
+
+    RewriteEngine On
+
+    ########################################################################
+    # 1) BOT / LEGACY vBulletin GARBAGE → HARD 410
+    ########################################################################
+
+    RewriteCond %{REQUEST_URI} (misc\.php|search\.php|sendmessage\.php|post_thanks\.php|member\.php) [NC,OR]
+    RewriteCond %{REQUEST_URI} ^/members/ [NC,OR]
+    RewriteCond %{REQUEST_URI} \.html$ [NC,OR]
+    RewriteCond %{REQUEST_URI} ^/customavatars/ [NC,OR]
+    RewriteCond %{REQUEST_URI} ^/(vbseo|dbseo) [NC]
+    RewriteRule ^.*$ - [G]
+
+    ########################################################################
+    # 2) Rails reverse proxy — clean + early
+    ########################################################################
+
+    ProxyPreserveHost On
+
+    # /man_page → rails root
+    ProxyPass /man_page http://127.0.0.1:3001/
+    ProxyPassReverse /man_page http://127.0.0.1:3001/
+
+    # /man_pages → proper sub-path
+    ProxyPass /man_pages http://127.0.0.1:3001/man_pages
+    ProxyPassReverse /man_pages http://127.0.0.1:3001/man_pages
+
+    ########################################################################
+    # 3) Static assets from Rails public
+    ########################################################################
+
+    Alias /assets /var/unix_rails/public/assets
+    <Directory /var/unix_rails/public/assets>
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    Alias /maps /var/unix_rails/public/maps
+    <Directory /var/unix_rails/public/maps>
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    Alias /css /var/unix_rails/public/css
+    <Directory /var/unix_rails/public/css>
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    Alias /images /var/unix_rails/public/images
+    <Directory /var/unix_rails/public/images>
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    <Directory /var/unix_rails/public>
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    # Allow these to bypass all rewrites
+    RewriteRule ^/(favicon\.ico|ads\.txt|robots\.txt)$ - [L]
+
+    ########################################################################
+    # 4) Redirect homepage ONLY (www.unix.com → community.unix.com)
+    ########################################################################
+
+    RewriteCond %{HTTP_HOST} ^www\.unix\.com$ [NC]
+    RewriteCond %{REQUEST_URI} ^/$
+    RewriteRule ^/?$ https://community.unix.com/ [R=302,L]
+
+    ########################################################################
+    # 5) SSL
+    ########################################################################
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/unix.com-0001/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/unix.com-0001/privkey.pem
+
+</VirtualHost>
+
