@@ -13,10 +13,6 @@ ProxyPassReverse /man-page http://127.0.0.1:3001/
 ProxyPass        /fast_index http://127.0.0.1:3001/fast_index
 ProxyPassReverse /fast_index http://127.0.0.1:3001/fast_index
 
-# Stellar Distance Calculator
-ProxyPass /stellar http://127.0.0.1:3002/
-ProxyPassReverse /stellar http://127.0.0.1:3002/
-
 # Proxy Rails app for /man_pages
 ProxyPass /man-pages http://127.0.0.1:3001/man_pages
 ProxyPassReverse /man-pages http://127.0.0.1:3001/man_pages
